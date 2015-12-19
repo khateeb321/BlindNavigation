@@ -1,0 +1,21 @@
+<resources>
+    <!--
+    TODO: Before you run your application, you need a Google Maps API key.
+
+    To get one, follow this link, follow the directions and press "Create" at the end:
+
+    https://console.developers.google.com/flows/enableapi?apiid=maps_android_backend&keyType=CLIENT_SIDE_ANDROID&r=6A:83:DB:D8:0B:33:8B:E2:0E:57:16:DD:0B:F0:25:9B:02:86:7E:F2%3Bcom.example.khate.blind_nav
+
+    You can also add your credentials to an existing key, using this line:
+    6A:83:DB:D8:0B:33:8B:E2:0E:57:16:DD:0B:F0:25:9B:02:86:7E:F2;com.example.khate.blind_nav
+
+    Alternatively, follow the directions here:
+    https://developers.google.com/maps/documentation/android/start#get-key
+
+    Once you have your key (it starts with "AIza"), replace the "google_maps_key"
+    string in this file.
+
+    khateeb3211
+    -->
+    <string name="google_maps_key" templateMergeStrategy="preserve" translatable="false">AIzaSyBUpahZDmdFQDwve8fTLVWDnavAXDrfv8g</string>
+</resources>
