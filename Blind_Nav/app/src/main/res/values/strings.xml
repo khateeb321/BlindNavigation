@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">Blind_Nav</string>
     <string name="title_activity_maps">Map</string>
+    <string name="speech_prompt">Say somethinggg&#8230;</string>
+    <string name="speech_not_supported">Sorry! Your device doesn\'t support speech inputtt</string>
+    <string name="tap_on_mic">Tap on mic to speakkk</string>
 </resources>

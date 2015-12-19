@@ -1,17 +1,25 @@
 package com.example.khate.blind_nav;
 
 import android.Manifest;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
+import android.os.StrictMode;
+import android.speech.RecognizerIntent;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.view.View;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -19,6 +27,7 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -26,6 +35,15 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
+
+import org.w3c.dom.Document;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 public class MapsActivity extends FragmentActivity implements
         OnMapReadyCallback,
@@ -43,13 +61,13 @@ public class MapsActivity extends FragmentActivity implements
     private LocationRequest mLocationRequest;
     Marker marker;
     Location myCurrentLocation;
+    private final int REQ_CODE_SPEECH_INPUT = 100;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
@@ -73,6 +91,8 @@ public class MapsActivity extends FragmentActivity implements
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                 .setInterval(10 * 1000)        // 10 seconds, in milliseconds
                 .setFastestInterval(1 * 1000); // 1 second, in milliseconds
+
+        promptSpeechInput();
     }
 
 
@@ -160,5 +180,128 @@ public class MapsActivity extends FragmentActivity implements
         mMap.addMarker(options);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15));
 
+    }
+
+    public void onClick1(String destination)throws IOException {
+
+        Geocoder gc = new Geocoder(this);
+
+        List<Address> list1 = gc.getFromLocationName(destination, 1);
+        //Toast.makeText(this, list.get(0).toString(), Toast.LENGTH_SHORT).show();
+        Address add1 = list1.get(0);
+
+        String locality1 = add1.getLocality();
+
+        //Toast.makeText(this, locality, Toast.LENGTH_SHORT).show();
+
+        double lat1 = add1.getLatitude();
+        double lng1 = add1.getLongitude();
+
+        gotoLocation(myCurrentLocation.getLatitude(), myCurrentLocation.getLongitude(), 6);
+        gotoLocation(lat1, lng1, 6);
+
+        setMarker("Current Location", myCurrentLocation.getLatitude(), myCurrentLocation.getLongitude());
+        setMarker(add1.getLocality(),lat1,lng1);
+
+        drawPath(new LatLng(myCurrentLocation.getLatitude(),myCurrentLocation.getLongitude()), new LatLng(lat1,lng1));
+
+    }
+
+    private void gotoLocation(double lat, double lng, float zoom){
+        LatLng ll = new LatLng(lat, lng);
+        CameraUpdate update = CameraUpdateFactory.newLatLngZoom(ll, zoom);
+        mMap.moveCamera(update);
+    }
+
+    private void setMarker(String locality, double lat, double lng) {
+        /*if (marker != null) {
+            marker.remove();
+        }*/
+        MarkerOptions options = new MarkerOptions()
+                .position(new LatLng (lat, lng))
+                .title(locality);
+        //.flat(true);
+        marker = mMap.addMarker(options);
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lat, lng), 15));
+    }
+
+    private void drawPath(LatLng source, LatLng destination) {
+        try {
+
+            int SDK_INT = android.os.Build.VERSION.SDK_INT;
+            if (SDK_INT > 8) {
+                StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
+                        .permitAll().build();
+                StrictMode.setThreadPolicy(policy);
+                //your codes here
+
+
+                GMapV2Direction md = new GMapV2Direction();
+                mMap = ((SupportMapFragment) getSupportFragmentManager()
+                        .findFragmentById(R.id.map)).getMap();
+                Document doc = md.getDocument(source, destination,
+                        GMapV2Direction.MODE_DRIVING);
+
+                ArrayList<LatLng> directionPoint = md.getDirection(doc);
+                PolylineOptions rectLine = new PolylineOptions().width(3).color(
+                        Color.RED);
+
+                for (int i = 0; i < directionPoint.size(); i++) {
+                    rectLine.add(directionPoint.get(i));
+                }
+                Polyline polylin = mMap.addPolyline(rectLine);
+            }
+        }
+
+        catch (Exception e)
+        {
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+
+        }
+
+    }
+
+
+    private void promptSpeechInput() {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT,
+                getString(R.string.speech_prompt));
+        try {
+            startActivityForResult(intent, REQ_CODE_SPEECH_INPUT);
+        } catch (ActivityNotFoundException a) {
+            Toast.makeText(getApplicationContext(),
+                    getString(R.string.speech_not_supported),
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Receiving speech input
+     * */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        switch (requestCode) {
+            case REQ_CODE_SPEECH_INPUT: {
+                if (resultCode == RESULT_OK && null != data) {
+
+                    ArrayList<String> result = data
+                            .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                    //txtSpeechInput.setText(result.get(0));
+                    try {
+                        onClick1(result.get(0));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+                break;
+            }
+
+        }
     }
 }
