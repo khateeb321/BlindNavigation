@@ -32,6 +32,8 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -62,6 +64,7 @@ public class MapsActivity extends FragmentActivity implements
     Marker marker;
     Location myCurrentLocation;
     private final int REQ_CODE_SPEECH_INPUT = 100;
+    Circle shape;
 
 
     @Override
@@ -201,9 +204,9 @@ public class MapsActivity extends FragmentActivity implements
         gotoLocation(lat1, lng1, 6);
 
         setMarker("Current Location", myCurrentLocation.getLatitude(), myCurrentLocation.getLongitude());
-        setMarker(add1.getLocality(),lat1,lng1);
+        setMarkerCircle(add1.getLocality(), lat1, lng1);
 
-        drawPath(new LatLng(myCurrentLocation.getLatitude(),myCurrentLocation.getLongitude()), new LatLng(lat1,lng1));
+        drawPath(new LatLng(myCurrentLocation.getLatitude(), myCurrentLocation.getLongitude()), new LatLng(lat1, lng1));
 
     }
 
@@ -223,6 +226,28 @@ public class MapsActivity extends FragmentActivity implements
         //.flat(true);
         marker = mMap.addMarker(options);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lat, lng), 15));
+    }
+
+    private void setMarkerCircle(String locality, double lat, double lng) {
+        /*if (marker != null) {
+            marker.remove();
+        }*/
+        MarkerOptions options = new MarkerOptions()
+                .position(new LatLng (lat, lng))
+                .title(locality);
+        //.flat(true);
+        marker = mMap.addMarker(options);
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lat, lng), 15));
+
+
+        CircleOptions op = new CircleOptions()
+                .center(new LatLng(lat,lng))
+                .radius(200)
+                .fillColor(0x330000FF)
+                .strokeColor(Color.BLUE)
+                .strokeWidth(3);
+
+        mMap.addCircle(op);
     }
 
     private void drawPath(LatLng source, LatLng destination) {
@@ -265,7 +290,7 @@ public class MapsActivity extends FragmentActivity implements
     private void promptSpeechInput() {
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
         intent.putExtra(RecognizerIntent.EXTRA_PROMPT,
                 getString(R.string.speech_prompt));
