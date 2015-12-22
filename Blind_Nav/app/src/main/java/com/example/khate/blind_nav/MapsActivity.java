@@ -20,6 +20,7 @@ import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -32,6 +33,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
@@ -147,7 +149,7 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     public void onLocationChanged(Location location) {
 
-        //handleNewLocation(location);
+        handleNewCurrentLocation(location);
     }
 
     @Override
@@ -170,6 +172,7 @@ public class MapsActivity extends FragmentActivity implements
 
     }
 
+    /// === Initial Current location
     private void handleNewLocation(Location location) {
         Log.d(TAG, location.toString());
 
@@ -180,6 +183,23 @@ public class MapsActivity extends FragmentActivity implements
         MarkerOptions options = new MarkerOptions()
                 .position(latLng)
                 .title("I am here!");
+        mMap.addMarker(options);
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15));
+
+    }
+
+    /// === Updated Current location
+    private void handleNewCurrentLocation(Location location) {
+        Log.d(TAG, location.toString());
+
+        double currentLatitude = location.getLatitude();
+        double currentLongitude = location.getLongitude();
+        LatLng latLng = new LatLng(currentLatitude, currentLongitude);
+
+        MarkerOptions options = new MarkerOptions()
+                .position(latLng)
+                .title(currentLatitude + ", " + currentLongitude)
+                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
         mMap.addMarker(options);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15));
 
@@ -207,6 +227,47 @@ public class MapsActivity extends FragmentActivity implements
         setMarkerCircle(add1.getLocality(), lat1, lng1);
 
         drawPath(new LatLng(myCurrentLocation.getLatitude(), myCurrentLocation.getLongitude()), new LatLng(lat1, lng1));
+        testFunction(new LatLng(myCurrentLocation.getLatitude(), myCurrentLocation.getLongitude()), new LatLng(lat1, lng1));
+
+    }
+
+
+    //// === This function will geather the Instructions and the point where to give instruction
+    private void testFunction(LatLng source, LatLng destination){
+        String text = "";
+        try {
+
+            int SDK_INT = android.os.Build.VERSION.SDK_INT;
+            if (SDK_INT > 8) {
+                StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
+                        .permitAll().build();
+                StrictMode.setThreadPolicy(policy);
+                //your codes here
+
+
+                GMapV2Direction md = new GMapV2Direction();
+                mMap = ((SupportMapFragment) getSupportFragmentManager()
+                        .findFragmentById(R.id.map)).getMap();
+                Document doc = md.getDocument(source, destination,
+                        GMapV2Direction.MODE_DRIVING);
+
+                ArrayList<String> directionPoint = md.getTurns(doc);
+                ArrayList<LatLng> directionPoint1 = md.getTurnsPoint(doc);
+
+                for (int i = 0; i < directionPoint.size(); i++) {
+                    text += directionPoint.get(i) + "\n" + directionPoint1.get(i) + "\n\n";         /// === Instruction's list
+                    setMark(directionPoint1.get(i));        /// === Instruction's Points
+                }
+
+            }
+
+        }
+
+        catch (Exception e)
+        {
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+
+        }
 
     }
 
@@ -216,6 +277,7 @@ public class MapsActivity extends FragmentActivity implements
         mMap.moveCamera(update);
     }
 
+    //// === Normal / Current location
     private void setMarker(String locality, double lat, double lng) {
         /*if (marker != null) {
             marker.remove();
@@ -228,6 +290,29 @@ public class MapsActivity extends FragmentActivity implements
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lat, lng), 15));
     }
 
+    //// === Instruction's mark
+    private void setMark(LatLng ll) {
+        /*if (marker != null) {
+            marker.remove();
+        }*/
+        MarkerOptions options = new MarkerOptions()
+                .position(ll)
+                .title(ll.latitude + ", " + ll.longitude);
+        //.flat(true);
+        marker = mMap.addMarker(options);
+
+        CircleOptions op = new CircleOptions()
+                .center(ll)
+                .radius(40)
+                .fillColor(0x330000FF)
+                .strokeColor(Color.BLUE)
+                .strokeWidth(3);
+
+        mMap.addCircle(op);
+        //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lat, lng), 15));
+    }
+
+    //// === Destination Mark
     private void setMarkerCircle(String locality, double lat, double lng) {
         /*if (marker != null) {
             marker.remove();
@@ -242,7 +327,7 @@ public class MapsActivity extends FragmentActivity implements
 
         CircleOptions op = new CircleOptions()
                 .center(new LatLng(lat,lng))
-                .radius(200)
+                .radius(150)
                 .fillColor(0x330000FF)
                 .strokeColor(Color.BLUE)
                 .strokeWidth(3);

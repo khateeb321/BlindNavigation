@@ -1,5 +1,6 @@
 package com.example.khate.blind_nav;
 
+import android.text.Html;
 import android.util.Log;
 
 import com.google.android.gms.maps.model.LatLng;
@@ -206,6 +207,84 @@ public class GMapV2Direction {
 
         return listGeopoints;
     }
+
+    /// ------------------------------------------------------------------------------------------------------ ///
+
+    public ArrayList<String> getTurns(Document doc) {
+        NodeList nl1, nl2, nl3;
+        ArrayList<String> turns = new ArrayList<String>();
+        nl1 = doc.getElementsByTagName("step");
+        if (nl1.getLength() > 0) {
+            for (int i = 0; i < nl1.getLength(); i++) {
+                Node node1 = nl1.item(i);
+                nl2 = node1.getChildNodes();
+
+                /*if (nl2.getLength() > 0){
+                    for (int j = 0; j < nl2.getLength(); j++)
+                        Log.d("nodes",nl2.item(j).getNodeName() + " " + " ....");
+                    Log.d("nodes"," .... ");
+                }*/
+                Node locationNode = nl2.item(getNodeIndex(nl2, "html_instructions"));
+                String instruction = locationNode.getTextContent();
+
+                turns.add(Html.fromHtml(instruction).toString());
+
+                //maneuver
+            }
+        }
+
+        return turns;
+    }
+
+    /// ------------------------------------------------------------------------------------------------------ ///
+
+    /// ------------------------------------------------------------------------------------------------------ ///
+
+    public ArrayList<LatLng> getTurnsPoint(Document doc) {
+        NodeList nl1, nl2, nl3;
+        ArrayList<LatLng> turns = new ArrayList<LatLng>();
+        nl1 = doc.getElementsByTagName("step");
+        if (nl1.getLength() > 0) {
+            for (int i = 0; i < nl1.getLength(); i++) {
+                Node node1 = nl1.item(i);
+                nl2 = node1.getChildNodes();
+
+                /*if (nl2.getLength() > 0){
+                    for (int j = 0; j < nl2.getLength(); j++)
+                        Log.d("nodes",nl2.item(j).getNodeName() + " " + " ....");
+                    Log.d("nodes"," .... ");
+                }*/
+                Node locationNode = nl2.item(getNodeIndex(nl2, "html_instructions"));
+                String instruction = locationNode.getTextContent();
+
+                //turns.add(Html.fromHtml(instruction).toString());
+
+                if (instruction != ""){
+
+                    Node locationNode1 = nl2
+                            .item(getNodeIndex(nl2, "start_location"));
+
+                    nl3 = locationNode1.getChildNodes();
+                    Node latNode = nl3.item(getNodeIndex(nl3, "lat"));
+                    double lat = Double.parseDouble(latNode.getTextContent());
+                    Node lngNode = nl3.item(getNodeIndex(nl3, "lng"));
+                    double lng = Double.parseDouble(lngNode.getTextContent());
+
+                    turns.add((new LatLng(lat,lng)));
+                }
+
+
+
+
+
+                //maneuver
+            }
+        }
+
+        return turns;
+    }
+
+    /// ------------------------------------------------------------------------------------------------------ ///
 
     private int getNodeIndex(NodeList nl, String nodename) {
         for (int i = 0; i < nl.getLength(); i++) {
