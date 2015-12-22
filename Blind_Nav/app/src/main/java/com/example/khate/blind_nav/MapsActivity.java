@@ -14,6 +14,7 @@ import android.location.LocationManager;
 import android.os.Build;
 import android.os.StrictMode;
 import android.speech.RecognizerIntent;
+import android.speech.tts.TextToSpeech;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
@@ -53,7 +54,7 @@ public class MapsActivity extends FragmentActivity implements
         OnMapReadyCallback,
         LocationListener,
         GoogleApiClient.ConnectionCallbacks,
-        OnConnectionFailedListener {
+        OnConnectionFailedListener, TextToSpeech.OnInitListener {
 
     private GoogleMap mMap;
     protected LocationManager locationManager;
@@ -66,7 +67,10 @@ public class MapsActivity extends FragmentActivity implements
     Marker marker;
     Location myCurrentLocation;
     private final int REQ_CODE_SPEECH_INPUT = 100;
-    Circle shape;
+    ArrayList<CircleOptions> shape = new ArrayList<CircleOptions>();
+    ArrayList<String> directionPoint = new ArrayList<String>();
+    ArrayList<LatLng> directionPoint1 = new ArrayList<LatLng>();
+    private TextToSpeech tts;
 
 
     @Override
@@ -97,6 +101,7 @@ public class MapsActivity extends FragmentActivity implements
                 .setInterval(10 * 1000)        // 10 seconds, in milliseconds
                 .setFastestInterval(1 * 1000); // 1 second, in milliseconds
 
+        tts = new TextToSpeech(this, this);
         promptSpeechInput();
     }
 
@@ -146,10 +151,28 @@ public class MapsActivity extends FragmentActivity implements
 
     }
 
+
+    int p = 0;
     @Override
     public void onLocationChanged(Location location) {
-
+        float[] distance = new float[2];
         handleNewCurrentLocation(location);
+        //Toast.makeText(this,shape.get(0).getCenter().latitude + "," + shape.get(0).getCenter().longitude,Toast.LENGTH_SHORT).show();
+
+        if (p < directionPoint1.size()){
+
+            Location.distanceBetween(location.getLatitude(),
+                    location.getLongitude(), shape.get(p).getCenter().latitude,
+                    shape.get(p).getCenter().longitude, distance);
+
+            if (distance[0] < shape.get(p).getRadius()) {
+                Toast.makeText(this, "In the Circle\n" + directionPoint.get(p),Toast.LENGTH_SHORT).show();
+                speakOut(directionPoint.get(p));
+                p++;
+
+            }
+
+        }
     }
 
     @Override
@@ -199,7 +222,7 @@ public class MapsActivity extends FragmentActivity implements
         MarkerOptions options = new MarkerOptions()
                 .position(latLng)
                 .title(currentLatitude + ", " + currentLongitude)
-                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
+                .icon(BitmapDescriptorFactory.fromResource(R.drawable.blu));
         mMap.addMarker(options);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15));
 
@@ -251,8 +274,8 @@ public class MapsActivity extends FragmentActivity implements
                 Document doc = md.getDocument(source, destination,
                         GMapV2Direction.MODE_DRIVING);
 
-                ArrayList<String> directionPoint = md.getTurns(doc);
-                ArrayList<LatLng> directionPoint1 = md.getTurnsPoint(doc);
+                directionPoint = md.getTurns(doc);
+                directionPoint1 = md.getTurnsPoint(doc);
 
                 for (int i = 0; i < directionPoint.size(); i++) {
                     text += directionPoint.get(i) + "\n" + directionPoint1.get(i) + "\n\n";         /// === Instruction's list
@@ -308,6 +331,7 @@ public class MapsActivity extends FragmentActivity implements
                 .strokeColor(Color.BLUE)
                 .strokeWidth(3);
 
+        shape.add(op);
         mMap.addCircle(op);
         //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lat, lng), 15));
     }
@@ -413,5 +437,38 @@ public class MapsActivity extends FragmentActivity implements
             }
 
         }
+    }
+
+    public void onDestroy() {
+        // Don't forget to shutdown tts!
+        if (tts != null) {
+            tts.stop();
+            tts.shutdown();
+        }
+        super.onDestroy();
+    }
+
+    public void onInit(int status) {
+
+        if (status == TextToSpeech.SUCCESS) {
+
+            int result = tts.setLanguage(Locale.US);
+
+            if (result == TextToSpeech.LANG_MISSING_DATA
+                    || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                Log.e("TTS", "This Language is not supported");
+            } else {
+                //btnSpeak.setEnabled(true);
+                //speakOut();
+            }
+
+        } else {
+            Log.e("TTS", "Initilization Failed!");
+        }
+
+    }
+
+    private void speakOut(String text) {
+        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null);
     }
 }
